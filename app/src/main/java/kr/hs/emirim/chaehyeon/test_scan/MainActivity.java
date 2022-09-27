@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-// setContentView로 xml 파일을 inflating 시켜주어야 id로 각 view를 찾아서 사용할 수 있다.
+        // setContentView로 xml 파일을 inflating 시켜주어야 id로 각 view를 찾아서 사용할 수 있다.
         startButton = findViewById(R.id.start_button);
         stopButton = findViewById(R.id.stop_button);
         resetButton = findViewById(R.id.reset_button);
@@ -70,8 +70,8 @@ public class MainActivity extends AppCompatActivity {
         listView = findViewById(R.id.listview);
         listViewAdapter = new ListViewAdapter();
         listView.setAdapter(listViewAdapter);
-
         scanResultArrayList = new ArrayList<>();
+
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
 
@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 권한 요청하는 함수
+     *권한 요청하는 함수
      */
     private void requestPermission() {
         hasCoarseLocationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -136,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 블루투스를 켜는 함수
+     *블루투스를 켜는 함수
      */
     private void enableBluetooth() {
         if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
@@ -147,8 +147,53 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        Log.e(TAG, "블루투스 꺼져 있음.");
+        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        enableBluetoothLauncher.launch(enableBtIntent);
     }
 
     private void prepareBluetoothScan() {
+        bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+        leScanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                super.onScanResult(callbackType, result);
+                // 블루투스 스캔된 결과 확인.
+                Log.i(TAG, result.getDevice().getAddress() + " :: " + result.getRssi());
+                mData.add(result.getDevice().getAddress() + " :: " + result.getRssi());
+                listViewAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                super.onScanFailed(errorCode);
+                // 블루투스 스캔 실패
+                Log.e(TAG, "Bluetooth scan failed :: " + errorCode);
+            }
+        };
     }
+
+    /**
+     *블루투스 스캔 시작
+     */
+    private void start() {
+        if(scanning)
+            return;
+
+        scanning = true;
+        bluetoothLeScanner.startScan(leScanCallback);
+
+    }
+
+    /**
+     *블루투스 스캔 중지
+     */
+    private void stop() {
+        if(!scanning)
+            return;
+
+        scanning = false;
+        bluetoothLeScanner.stopScan(leScanCallback);
+    }
+
 }
